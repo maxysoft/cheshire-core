@@ -25,41 +25,32 @@ from cat.log import log
 
 class ConnectionAuth(ABC):
 
-    def __init__(
-            self,
-            resource: AuthResource,
-            permission: AuthPermission):
-        
+    def __init__(self, resource: AuthResource, permission: AuthPermission):
         self.resource = resource
         self.permission = permission
 
-    async def __call__(
-        self,
-        connection: HTTPConnection # Request | WebSocket,
-    ) -> StrayCat:
-
-        # get protocol from Starlette request
+    async def __call__(self, connection: HTTPConnection) -> StrayCat:
         protocol = connection.scope.get('type')
-        # extract credentials (user_id, token_or_key) from connection
-        user_id, credential = self.extract_credentials(connection)
+        credential = self.extract_credentials(connection)
+        
+        if not credential:
+            self.not_allowed(connection)
+
         auth_handlers = [
-            # try to get user from local idp
             connection.app.state.ccat.core_auth_handler,
-            # try to get user from auth_handler
             connection.app.state.ccat.custom_auth_handler,
         ]
         for ah in auth_handlers:
             user: AuthUserInfo = ah.authorize_user_from_credential(
-                protocol, credential, self.resource, self.permission, user_id=user_id
+                protocol, credential, self.resource, self.permission
             )
             if user:
                 return await self.get_user_stray(user, connection)
 
-        # if no stray was obtained, raise exception
         self.not_allowed(connection)
 
     @abstractmethod
-    def extract_credentials(self, connection: Request | WebSocket) -> Tuple[str] | None:
+    def extract_credentials(self, connection: Request | WebSocket) -> str | None:
         pass
 
     @abstractmethod
@@ -69,20 +60,15 @@ class ConnectionAuth(ABC):
     @abstractmethod
     def not_allowed(self, connection: Request | WebSocket):
         pass
-        
 
 class HTTPAuth(ConnectionAuth):
 
-    def extract_credentials(self, connection: Request) -> Tuple[None, str] | None:
-        """
-        Extract session token from headers
-        """
+    def extract_credentials(self, connection: Request) -> str | None:
         token = connection.headers.get("Authorization", None)
         if token and ("Bearer " in token):
             token = token.replace("Bearer ", "")
 
         if not token:
-            # Legacy header to pass CCAT_API_KEY
             token = connection.headers.get("access_token", None)
             if token:
                 log.warning(
@@ -90,12 +76,10 @@ class HTTPAuth(ConnectionAuth):
                     "Pass your token/key using the `Authorization: Bearer <token>` format."
                 )
 
-        # some clients may send an empty string instead of just not setting the header
         if token == "":
             token = None
 
-        return None, token
-
+        return token
 
     async def get_user_stray(self, user: AuthUserInfo, connection: Request) -> StrayCat:
         strays = connection.app.state.strays
@@ -103,15 +87,12 @@ class HTTPAuth(ConnectionAuth):
 
         if user.id not in strays.keys():
             strays[user.id] = StrayCat(
-                    # TODOV2: user_id should be the user.id
-                user_id=user.name, user_data=user, main_loop=event_loop
+                user_id=user.id, user_data=user, main_loop=event_loop
             )
         return strays[user.id]
-    
+
     def not_allowed(self, connection: Request):
         raise HTTPException(status_code=403, detail={"error": "Invalid Credentials"})
-    
-
     
 
 class WebSocketAuth(ConnectionAuth):
@@ -158,18 +139,14 @@ class WebSocketAuth(ConnectionAuth):
 
 class CoreFrontendAuth(HTTPAuth):
 
-    def extract_credentials(self, connection: Request) -> Tuple[None, str] | None:
-        """
-        Extract session token from cookie
-        """
+    def extract_credentials(self, connection: Request) -> str | None:
         token = connection.cookies.get("ccat_user_token", None)
 
-        # core webapps cannot be accessed without a cookie
         if token is None or token == "":
             self.not_allowed(connection)
 
-        return None, token
-    
+        return token
+
     def not_allowed(self, connection: Request):
         referer_query = urlencode({"referer": connection.url.path})
         raise HTTPException(
