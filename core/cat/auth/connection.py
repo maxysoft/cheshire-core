@@ -93,11 +93,11 @@ class HTTPAuth(ConnectionAuth):
 
     def not_allowed(self, connection: Request):
         raise HTTPException(status_code=403, detail={"error": "Invalid Credentials"})
-    
+        
 
 class WebSocketAuth(ConnectionAuth):
 
-    def extract_credentials(self, connection: WebSocket) -> Tuple[None, str] | None:
+    def extract_credentials(self, connection: WebSocket) -> str | None:
         """
         Extract session token from WebSocket query string
         """
@@ -105,8 +105,7 @@ class WebSocketAuth(ConnectionAuth):
         # Headers do not work from the browser
         token = connection.query_params.get("token", None)
         
-        return None, token
-    
+        return token
 
     async def get_user_stray(self, user: AuthUserInfo, connection: WebSocket) -> StrayCat:
         strays = connection.app.state.strays
@@ -125,7 +124,7 @@ class WebSocketAuth(ConnectionAuth):
         else:
             stray = StrayCat(
                 ws=connection,
-                user_id=user.name, # TODOV2: user_id should be the user.id
+                user_id=user.id,  # Use user.id instead of user.name
                 user_data=user,
                 main_loop=asyncio.get_running_loop(),
             )
