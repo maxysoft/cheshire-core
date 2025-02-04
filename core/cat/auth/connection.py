@@ -73,15 +73,10 @@ class ConnectionAuth(ABC):
 
 class HTTPAuth(ConnectionAuth):
 
-    def extract_credentials(self, connection: Request) -> Tuple[str, str] | None:
+    def extract_credentials(self, connection: Request) -> Tuple[None, str] | None:
         """
-        Extract user_id and token/key from headers
+        Extract session token from headers
         """
-
-        # when using CCAT_API_KEY, user_id is passed in headers
-        user_id = connection.headers.get("user_id", "user")
-
-        # Proper Authorization header
         token = connection.headers.get("Authorization", None)
         if token and ("Bearer " in token):
             token = token.replace("Bearer ", "")
@@ -94,12 +89,12 @@ class HTTPAuth(ConnectionAuth):
                     "Deprecation Warning: `access_token` header will not be supported in v2."
                     "Pass your token/key using the `Authorization: Bearer <token>` format."
                 )
-        
+
         # some clients may send an empty string instead of just not setting the header
         if token == "":
             token = None
 
-        return user_id, token
+        return None, token
 
 
     async def get_user_stray(self, user: AuthUserInfo, connection: Request) -> StrayCat:
@@ -121,18 +116,15 @@ class HTTPAuth(ConnectionAuth):
 
 class WebSocketAuth(ConnectionAuth):
 
-    def extract_credentials(self, connection: WebSocket) -> Tuple[str, str] | None:
+    def extract_credentials(self, connection: WebSocket) -> Tuple[None, str] | None:
         """
-        Extract user_id from WebSocket path params
-        Extract token from WebSocket query string
+        Extract session token from WebSocket query string
         """
-        user_id = connection.path_params.get("user_id", "user")
-
         # TODOAUTH: is there a more secure way to pass the token over websocket?
-        #   Headers do not work from the browser
+        # Headers do not work from the browser
         token = connection.query_params.get("token", None)
         
-        return user_id, token
+        return None, token
     
 
     async def get_user_stray(self, user: AuthUserInfo, connection: WebSocket) -> StrayCat:
@@ -166,18 +158,17 @@ class WebSocketAuth(ConnectionAuth):
 
 class CoreFrontendAuth(HTTPAuth):
 
-    def extract_credentials(self, connection: Request) -> Tuple[str, str] | None:
+    def extract_credentials(self, connection: Request) -> Tuple[None, str] | None:
         """
-        Extract user_id from cookie
+        Extract session token from cookie
         """
-
         token = connection.cookies.get("ccat_user_token", None)
 
         # core webapps cannot be accessed without a cookie
         if token is None or token == "":
             self.not_allowed(connection)
 
-        return "user", token
+        return None, token
     
     def not_allowed(self, connection: Request):
         referer_query = urlencode({"referer": connection.url.path})
