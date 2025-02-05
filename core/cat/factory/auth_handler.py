@@ -8,7 +8,6 @@ from cat.auth.permissions import AuthUserInfo, AuthResource, AuthPermission
 
 from cat.mad_hatter.mad_hatter import MadHatter
 from cat.factory.custom_auth_handler import (
-    # ApiKeyAuthHandler,
     BaseAuthHandler,
     CoreOnlyAuthHandler,
 )
@@ -42,23 +41,9 @@ class CoreOnlyAuthConfig(AuthHandlerConfig):
     )
 
 
-# TODOAUTH: have at least another auth_handler class to test
-# class ApiKeyAuthConfig(AuthHandlerConfig):
-#     _pyclass: Type = ApiKeyAuthHandler
-
-#     model_config = ConfigDict(
-#         json_schema_extra={
-#             "humanReadableName": "Api Key Auth Handler",
-#             "description": "Yeeeeah.",
-#             "link": "",
-#         }
-#     )
-
-
 def get_allowed_auth_handler_strategies():
     list_auth_handler_default = [
         CoreOnlyAuthConfig,
-        # ApiKeyAuthConfig,
     ]
 
     mad_hatter_instance = MadHatter()
@@ -90,26 +75,35 @@ class CoreAuthHandler(BaseAuthHandler):
         self, token: str, auth_resource: AuthResource, auth_permission: AuthPermission
     ) -> AuthUserInfo | None:
         try:
+            log.debug(f"Decoding token: {token}")
             # decode token
             payload = jwt.decode(
                 token,
                 get_env("CCAT_JWT_SECRET"),
                 algorithms=[get_env("CCAT_JWT_ALGORITHM")],
             )
+            log.debug(f"Decoded payload: {payload}")
 
             # get user from DB
             users = get_users()
+            log.debug(f"Users from DB: {users}")
             if payload["sub"] in users:
                 user = users[payload["sub"]]
+                log.debug(f"User found: {user}")
                 # TODOAUTH: permissions check should be done in a method
                 if auth_resource in user["permissions"].keys() and \
                         auth_permission in user["permissions"][auth_resource]:
+                    log.debug(f"User has required permissions: {auth_resource}, {auth_permission}")
                     return AuthUserInfo(
                         id=payload["sub"],
                         name=payload["username"],
                         permissions=user["permissions"],
                         extra=user,
                     )
+                else:
+                    log.warning(f"User does not have required permissions: {auth_resource}, {auth_permission}")
+            else:
+                log.warning(f"User not found in DB: {payload['sub']}")
 
         except Exception as e:
             log.error(f"Could not auth user from JWT: {e}")
