@@ -18,7 +18,7 @@ router = APIRouter(
 class TokenResponse(BaseModel):
     access_token: str
 
-def verify_shopify_hmac(request: Request) -> bool:
+async def verify_shopify_hmac(request: Request) -> bool:  # Make function async
     """Verify Shopify HMAC signature"""
     try:
         hmac_header = request.headers.get("X-Shopify-Hmac-Sha256")
