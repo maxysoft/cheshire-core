@@ -97,7 +97,13 @@ async def generate_token(request: Request):
             "iat": datetime.utcnow(),
             "shop_id": shop_id,
             "user_id": user_id,
-            "type": "shopify"
+            "type": "shopify",
+            "permissions": {
+                "STATUS": ["READ"],
+                "MEMORY": ["READ", "LIST"],
+                "CONVERSATION": ["WRITE", "EDIT", "LIST", "READ", "DELETE"],
+                "STATIC": ["READ"],
+            }
         }
         
         token = jwt.encode(
