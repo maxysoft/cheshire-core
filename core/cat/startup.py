@@ -11,17 +11,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from cat.log import log
 from cat.env import get_env
 from cat.routes import (
-    base,
-    auth,
-    users,
-    settings,
-    llm,
-    embedder,
-    auth_handler,
-    plugins,
-    upload,
-    websocket,
-    shopify,
+    base_router,
+    auth_router,
+    users_router,
+    settings_router,
+    llm_router,
+    embedder_router,
+    plugins_router,
+    memory_router,
+    upload_router,
+    auth_handler_router,
+    websocket_router,
+    shopify_router  # Import as shopify_router
 )
 from cat.routes.memory.memory_router import memory_router
 from cat.routes.static import admin, static
@@ -83,25 +84,25 @@ if cors_enabled == "true":
     )
 
 # Add routers to the middleware stack.
-cheshire_cat_api.include_router(base.router, tags=["Home"])
-cheshire_cat_api.include_router(auth.router, tags=["User Auth"], prefix="/auth")
-cheshire_cat_api.include_router(users.router, tags=["Users"], prefix="/users")
-cheshire_cat_api.include_router(settings.router, tags=["Settings"], prefix="/settings")
+cheshire_cat_api.include_router(base_router, tags=["Home"])
+cheshire_cat_api.include_router(auth_router, tags=["User Auth"], prefix="/auth")
+cheshire_cat_api.include_router(users_router, tags=["Users"], prefix="/users")
+cheshire_cat_api.include_router(settings_router, tags=["Settings"], prefix="/settings")
 cheshire_cat_api.include_router(
     llm.router, tags=["Large Language Model"], prefix="/llm"
 )
-cheshire_cat_api.include_router(embedder.router, tags=["Embedder"], prefix="/embedder")
-cheshire_cat_api.include_router(plugins.router, tags=["Plugins"], prefix="/plugins")
+cheshire_cat_api.include_router(embedder_router, tags=["Embedder"], prefix="/embedder")
+cheshire_cat_api.include_router(plugins_router, tags=["Plugins"], prefix="/plugins")
 cheshire_cat_api.include_router(memory_router, prefix="/memory")
 cheshire_cat_api.include_router(
-    upload.router, tags=["Rabbit Hole"], prefix="/rabbithole"
+    upload_router, tags=["Rabbit Hole"], prefix="/rabbithole"
 )
 cheshire_cat_api.include_router(
-    auth_handler.router, tags=["AuthHandler"], prefix="/auth_handler"
+    auth_handler_router, tags=["AuthHandler"], prefix="/auth_handler"
 )
-cheshire_cat_api.include_router(websocket.router, tags=["Websocket"])
+cheshire_cat_api.include_router(websocket_router, tags=["Websocket"])
 
-cheshire_cat_api.include_router(shopify.router, tags=["Shopify"], prefix="/shopify")
+cheshire_cat_api.include_router(shopify_router, tags=["Shopify"], prefix="/shopify")
 
 # mount static files
 # this cannot be done via fastapi.APIrouter:
