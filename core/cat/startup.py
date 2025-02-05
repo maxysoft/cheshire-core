@@ -1,6 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, APIRoute
+from fastapi import FastAPI
+from fastapi.routing import APIRoute
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -79,13 +80,13 @@ if cors_enabled == "true":
 cheshire_cat_api.include_router(base.router, tags=["Home"])
 cheshire_cat_api.include_router(auth.router, tags=["User Auth"], prefix="/auth")
 cheshire_cat_api.include_router(users.router, tags=["Users"], prefix="/users")
-cheshire_cat_api.include_router(settings.router, tags=["Settings"], prefix="/settings")
+cheshire_cat_api.include_router(settings.router, tags=["Settings"], prefix="/settings"])
 cheshire_cat_api.include_router(llm.router, tags=["Large Language Model"], prefix="/llm")
-cheshire_cat_api.include_router(embedder.router, tags=["Embedder"], prefix="/embedder")
-cheshire_cat_api.include_router(plugins.router, tags=["Plugins"], prefix="/plugins")
+cheshire_cat_api.include_router(embedder.router, tags=["Embedder"], prefix="/embedder"])
+cheshire_cat_api.include_router(plugins.router, tags=["Plugins"], prefix="/plugins"])
 cheshire_cat_api.include_router(memory_router, prefix="/memory")
-cheshire_cat_api.include_router(upload.router, tags=["Rabbit Hole"], prefix="/rabbithole")
-cheshire_cat_api.include_router(auth_handler.router, tags=["AuthHandler"], prefix="/auth_handler")
+cheshire_cat_api.include_router(upload.router, tags=["Rabbit Hole"], prefix="/rabbithole"])
+cheshire_cat_api.include_router(auth_handler.router, tags=["AuthHandler"], prefix="/auth_handler"])
 cheshire_cat_api.include_router(websocket.router, tags=["Websocket"])
 
 # mount static files
