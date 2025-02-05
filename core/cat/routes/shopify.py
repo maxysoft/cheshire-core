@@ -10,7 +10,7 @@ from cat.log import log
 
 router = APIRouter(
     prefix="/shopify",
-    tags=["shopify"],
+    tags=["Shopify"],
     responses={404: {"description": "Not found"}},
 )
 

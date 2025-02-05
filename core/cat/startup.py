@@ -22,7 +22,7 @@ from cat.routes import (
     upload_router,
     auth_handler_router,
     websocket_router,
-    shopify_router  # Import as shopify_router
+    shopify_router,
 )
 from cat.routes.memory.memory_router import memory_router
 from cat.routes.static import admin, static
