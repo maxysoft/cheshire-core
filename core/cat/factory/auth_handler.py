@@ -8,6 +8,8 @@ from cat.factory.custom_auth_handler import (
     CoreOnlyAuthHandler,
 )
 
+from cat.factory.shopify_auth_handler import ShopifyAuthHandler
+
 
 class AuthHandlerConfig(BaseModel):
     _pyclass: Type[BaseAuthHandler] = None
@@ -35,6 +37,7 @@ class CoreOnlyAuthConfig(AuthHandlerConfig):
             "link": "",  # TODO link to auth docs
         }
     )
+
 
 class ShopifyAuthConfig(AuthHandlerConfig):
     _pyclass: Type = ShopifyAuthHandler
