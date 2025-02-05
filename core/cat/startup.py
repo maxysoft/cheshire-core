@@ -27,6 +27,8 @@ from cat.routes.static import admin, static
 from cat.routes.openapi import get_openapi_configuration_function
 from cat.looking_glass.cheshire_cat import CheshireCat
 
+from cat.routes import shopify
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
@@ -99,6 +101,12 @@ cheshire_cat_api.include_router(
     auth_handler.router, tags=["AuthHandler"], prefix="/auth_handler"
 )
 cheshire_cat_api.include_router(websocket.router, tags=["Websocket"])
+
+cheshire_cat_api.include_router(
+    shopify.router,
+    tags=["Shopify"],
+    prefix="/shopify"
+)
 
 # mount static files
 # this cannot be done via fastapi.APIrouter:
