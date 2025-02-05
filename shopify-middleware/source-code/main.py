@@ -1,18 +1,16 @@
-from fastapi import APIRouter, Request, Depends, HTTPException
+from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 import jwt
 import hmac
 import hashlib
 import base64
 from datetime import datetime, timedelta
-from cat.env import get_env
-from cat.log import log
+from dotenv import load_dotenv
+import os
 
-router = APIRouter(
-    prefix="/shopify",
-    tags=["Shopify"],
-    responses={404: {"description": "Not found"}},
-)
+load_dotenv()
+
+app = FastAPI()
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -25,9 +23,8 @@ async def verify_shopify_hmac(request: Request) -> bool:
         if not hmac_header or not shop_id:
             return False
         
-        shopify_secret = get_env("SHOPIFY_API_SECRET")
+        shopify_secret = os.getenv("SHOPIFY_API_SECRET")
         if not shopify_secret:
-            log.error("SHOPIFY_API_SECRET not configured")
             return False
 
         body = await request.body()
@@ -42,35 +39,25 @@ async def verify_shopify_hmac(request: Request) -> bool:
         return hmac.compare_digest(calculated_hmac, hmac_header)
         
     except Exception as e:
-        log.error(f"HMAC validation error: {str(e)}")
         return False
 
-@router.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "ok"}
-
-@router.post("/token", response_model=TokenResponse)
+@app.post("/shopify/token", response_model=TokenResponse)
 async def generate_token(request: Request):
     """Generate JWT token for Shopify users"""
     try:
-        # Verify Shopify request
         if not await verify_shopify_hmac(request):
-            log.warning("Invalid Shopify HMAC signature")
             raise HTTPException(status_code=401, detail="Invalid Shopify request")
 
         shop_id = request.headers.get("X-Shopify-Shop-Id")
         user_id = request.headers.get("X-Shopify-Customer-Id")
         
         if not shop_id or not user_id:
-            log.warning(f"Authentication attempt without Shopify headers: shop_id={shop_id}, user_id={user_id}")
             raise HTTPException(status_code=401, detail="Missing Shopify authentication")
         
-        jwt_secret = get_env("CCAT_JWT_SECRET")
-        jwt_algorithm = get_env("CCAT_JWT_ALGORITHM")
+        jwt_secret = os.getenv("CCAT_JWT_SECRET")
+        jwt_algorithm = os.getenv("CCAT_JWT_ALGORITHM")
         
         if not jwt_secret or not jwt_algorithm:
-            log.error("JWT configuration missing from environment")
             raise HTTPException(status_code=500, detail="Missing JWT configuration")
         
         payload = {
@@ -89,12 +76,9 @@ async def generate_token(request: Request):
             algorithm=jwt_algorithm
         )
         
-        log.debug(f"Generated token for Shopify user {user_id} from shop {shop_id}")
         return {"access_token": token}
         
     except jwt.PyJWTError as e:
-        log.error(f"JWT token generation failed: {str(e)}")
         raise HTTPException(status_code=500, detail="Token generation failed")
     except Exception as e:
-        log.error(f"Unexpected error in token generation: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")

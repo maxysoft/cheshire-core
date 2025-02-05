@@ -1,0 +1,52 @@
+services:
+  cheshire-cat-core-shopify:
+    build:
+      context: ./core
+    container_name: cheshire-cat-core-shopify
+    restart: unless-stopped
+    depends_on:
+      - cheshire-cat-shopify-vector-memory
+    env_file:
+      - .env
+    ports:
+      - 1866:80
+    volumes:
+      - ./static:/app/cat/static
+      - ./plugins:/app/cat/plugins
+      - ./data:/app/cat/data
+    networks:
+      - cheshire-shopify-net
+      - ollama-net
+      - vllm-net
+      - localai-net
+
+  cheshire-cat-shopify-vector-memory:
+    image: qdrant/qdrant:latest
+    container_name: cheshire-cat-shopify-vector-memory
+    restart: unless-stopped
+    volumes:
+      - ./long_term_memory/vector:/qdrant/storage
+    networks:
+      - cheshire-shopify-net
+
+  shopify-middleware:
+    build:
+      context: ./shopify-middleware
+    container_name: cheshire-cat-shopify-middleware
+    restart: unless-stopped
+    env_file:
+      - ./shopify-middleware/.env
+    ports:
+      - "8082:8000"
+    networks:
+      - cheshire-shopify-net
+
+networks:
+  cheshire-shopify-net:
+    name: cheshire-shopify-net
+  ollama-net:
+    external: true
+  vllm-net:
+    external: true
+  localai-net:
+    external: true
