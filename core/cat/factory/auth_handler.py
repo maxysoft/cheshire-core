@@ -1,5 +1,10 @@
 from typing import Type
 from pydantic import BaseModel, ConfigDict
+import jwt
+from datetime import datetime, timedelta
+from cat.env import get_env
+from cat.log import log
+from cat.auth.permissions import AuthUserInfo, AuthResource, AuthPermission
 
 from cat.mad_hatter.mad_hatter import MadHatter
 from cat.factory.custom_auth_handler import (
@@ -78,3 +83,36 @@ def get_auth_handler_from_name(name):
         if auth_handler.__name__ == name:
             return auth_handler
     return None
+
+
+class CoreAuthHandler(BaseAuthHandler):
+    def authorize_user_from_jwt(
+        self, token: str, auth_resource: AuthResource, auth_permission: AuthPermission
+    ) -> AuthUserInfo | None:
+        try:
+            # decode token
+            payload = jwt.decode(
+                token,
+                get_env("CCAT_JWT_SECRET"),
+                algorithms=[get_env("CCAT_JWT_ALGORITHM")],
+            )
+
+            # get user from DB
+            users = get_users()
+            if payload["sub"] in users:
+                user = users[payload["sub"]]
+                # TODOAUTH: permissions check should be done in a method
+                if auth_resource in user["permissions"].keys() and \
+                        auth_permission in user["permissions"][auth_resource]:
+                    return AuthUserInfo(
+                        id=payload["sub"],
+                        name=payload["username"],
+                        permissions=user["permissions"],
+                        extra=user,
+                    )
+
+        except Exception as e:
+            log.error(f"Could not auth user from JWT: {e}")
+
+        # do not pass
+        return None
