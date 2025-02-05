@@ -31,8 +31,21 @@ def verify_shopify_hmac(request: Request) -> bool:
             log.error("SHOPIFY_API_SECRET not configured")
             return False
 
-        # TODO: Implement proper HMAC validation when needed
-        return True
+        # Get raw request body
+        body = await request.body()
+        
+        # Calculate HMAC
+        digest = hmac.new(
+            shopify_secret.encode('utf-8'), 
+            body, 
+            hashlib.sha256
+        ).digest()
+        
+        calculated_hmac = base64.b64encode(digest).decode('utf-8')
+        
+        # Compare with header
+        return hmac.compare_digest(calculated_hmac, hmac_header)
+        
     except Exception as e:
         log.error(f"HMAC validation error: {str(e)}")
         return False

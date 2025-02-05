@@ -21,6 +21,7 @@ from cat.routes import (
     plugins,
     upload,
     websocket,
+    shopify,
 )
 from cat.routes.memory.memory_router import memory_router
 from cat.routes.static import admin, static
@@ -102,11 +103,7 @@ cheshire_cat_api.include_router(
 )
 cheshire_cat_api.include_router(websocket.router, tags=["Websocket"])
 
-cheshire_cat_api.include_router(
-    shopify.router,
-    tags=["Shopify"],
-    prefix="/shopify"
-)
+cheshire_cat_api.include_router(shopify.router, tags=["Shopify"], prefix="/shopify")
 
 # mount static files
 # this cannot be done via fastapi.APIrouter:
