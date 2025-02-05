@@ -5,7 +5,6 @@ import hmac
 import hashlib
 import base64
 from datetime import datetime, timedelta
-from typing import Optional
 from cat.env import get_env
 from cat.log import log
 
@@ -18,7 +17,7 @@ router = APIRouter(
 class TokenResponse(BaseModel):
     access_token: str
 
-async def verify_shopify_hmac(request: Request) -> bool:  # Make function async
+async def verify_shopify_hmac(request: Request) -> bool:
     """Verify Shopify HMAC signature"""
     try:
         hmac_header = request.headers.get("X-Shopify-Hmac-Sha256")
@@ -31,10 +30,8 @@ async def verify_shopify_hmac(request: Request) -> bool:  # Make function async
             log.error("SHOPIFY_API_SECRET not configured")
             return False
 
-        # Get raw request body
         body = await request.body()
         
-        # Calculate HMAC
         digest = hmac.new(
             shopify_secret.encode('utf-8'), 
             body, 
@@ -42,8 +39,6 @@ async def verify_shopify_hmac(request: Request) -> bool:  # Make function async
         ).digest()
         
         calculated_hmac = base64.b64encode(digest).decode('utf-8')
-        
-        # Compare with header
         return hmac.compare_digest(calculated_hmac, hmac_header)
         
     except Exception as e:
@@ -60,11 +55,10 @@ async def generate_token(request: Request):
     """Generate JWT token for Shopify users"""
     try:
         # Verify Shopify request
-        if not verify_shopify_hmac(request):
+        if not await verify_shopify_hmac(request):
             log.warning("Invalid Shopify HMAC signature")
             raise HTTPException(status_code=401, detail="Invalid Shopify request")
 
-        # Get Shopify session data from headers
         shop_id = request.headers.get("X-Shopify-Shop-Id")
         user_id = request.headers.get("X-Shopify-Customer-Id")
         
@@ -79,7 +73,6 @@ async def generate_token(request: Request):
             log.error("JWT configuration missing from environment")
             raise HTTPException(status_code=500, detail="Missing JWT configuration")
         
-        # Generate JWT token
         payload = {
             "sub": f"shopify_{shop_id}_{user_id}",
             "username": f"shopify_user_{user_id}",

@@ -28,8 +28,6 @@ from cat.routes.static import admin, static
 from cat.routes.openapi import get_openapi_configuration_function
 from cat.looking_glass.cheshire_cat import CheshireCat
 
-from cat.routes import shopify
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
