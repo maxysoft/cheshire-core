@@ -101,7 +101,6 @@ cheshire_cat_api.include_router(
     auth_handler_router, tags=["AuthHandler"], prefix="/auth_handler"
 )
 cheshire_cat_api.include_router(websocket_router, tags=["Websocket"])
-
 cheshire_cat_api.include_router(shopify_router, tags=["Shopify"], prefix="/shopify")
 
 # mount static files
