@@ -67,9 +67,7 @@ def get_allowed_auth_handler_strategies():
 def get_auth_handlers_schemas():
     AUTH_HANDLER_SCHEMAS = {}
     for config_class in get_allowed_auth_handler_strategies():
-        schema = config_class.model_json_schema()
-        schema["auhrizatorName"] = schema["title"]
-        AUTH_HANDLER_SCHEMAS[schema["title"]] = schema
+        AUTH_HANDLER_SCHEMAS[config_class.__name__] = config_class.schema()
 
     return AUTH_HANDLER_SCHEMAS
 

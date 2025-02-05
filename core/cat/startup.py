@@ -1,15 +1,9 @@
 import asyncio
 from contextlib import asynccontextmanager
-from scalar_fastapi import get_scalar_api_reference
-
-from fastapi import FastAPI
-from fastapi.routing import APIRoute
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
+from fastapi import FastAPI, APIRoute
 from fastapi.middleware.cors import CORSMiddleware
-
-from cat.log import log
-from cat.env import get_env
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from cat.routes import (
     base,
     auth,
@@ -17,19 +11,21 @@ from cat.routes import (
     settings,
     llm,
     embedder,
-    auth_handler,
     plugins,
     upload,
+    auth_handler,
     websocket,
 )
 from cat.routes.memory.memory_router import memory_router
 from cat.routes.static import admin, static
 from cat.routes.openapi import get_openapi_configuration_function
 from cat.looking_glass.cheshire_cat import CheshireCat
+from cat.env import get_env
+from cat.log import log
+from cat.scalar import get_scalar_api_reference
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-
     #       ^._.^
     #
     # loads Cat and plugins
@@ -50,10 +46,8 @@ async def lifespan(app: FastAPI):
 
     yield
 
-
 def custom_generate_unique_id(route: APIRoute):
     return f"{route.name}"
-
 
 # REST API
 cheshire_cat_api = FastAPI(
@@ -86,18 +80,12 @@ cheshire_cat_api.include_router(base.router, tags=["Home"])
 cheshire_cat_api.include_router(auth.router, tags=["User Auth"], prefix="/auth")
 cheshire_cat_api.include_router(users.router, tags=["Users"], prefix="/users")
 cheshire_cat_api.include_router(settings.router, tags=["Settings"], prefix="/settings")
-cheshire_cat_api.include_router(
-    llm.router, tags=["Large Language Model"], prefix="/llm"
-)
+cheshire_cat_api.include_router(llm.router, tags=["Large Language Model"], prefix="/llm")
 cheshire_cat_api.include_router(embedder.router, tags=["Embedder"], prefix="/embedder")
 cheshire_cat_api.include_router(plugins.router, tags=["Plugins"], prefix="/plugins")
 cheshire_cat_api.include_router(memory_router, prefix="/memory")
-cheshire_cat_api.include_router(
-    upload.router, tags=["Rabbit Hole"], prefix="/rabbithole"
-)
-cheshire_cat_api.include_router(
-    auth_handler.router, tags=["AuthHandler"], prefix="/auth_handler"
-)
+cheshire_cat_api.include_router(upload.router, tags=["Rabbit Hole"], prefix="/rabbithole")
+cheshire_cat_api.include_router(auth_handler.router, tags=["AuthHandler"], prefix="/auth_handler")
 cheshire_cat_api.include_router(websocket.router, tags=["Websocket"])
 
 # mount static files
@@ -109,7 +97,6 @@ admin.mount(cheshire_cat_api)
 # static files (for plugins and other purposes)
 static.mount(cheshire_cat_api)
 
-
 # error handling
 @cheshire_cat_api.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
@@ -118,10 +105,8 @@ async def validation_exception_handler(request, exc):
         content={"error": exc.errors()},
     )
 
-
 # openapi customization
 cheshire_cat_api.openapi = get_openapi_configuration_function(cheshire_cat_api)
-
 
 @cheshire_cat_api.get("/docs", include_in_schema=False)
 async def scalar_docs():
