@@ -89,7 +89,7 @@ cheshire_cat_api.include_router(auth_router, tags=["User Auth"], prefix="/auth")
 cheshire_cat_api.include_router(users_router, tags=["Users"], prefix="/users")
 cheshire_cat_api.include_router(settings_router, tags=["Settings"], prefix="/settings")
 cheshire_cat_api.include_router(
-    llm.router, tags=["Large Language Model"], prefix="/llm"
+    llm_router, tags=["Large Language Model"], prefix="/llm"
 )
 cheshire_cat_api.include_router(embedder_router, tags=["Embedder"], prefix="/embedder")
 cheshire_cat_api.include_router(plugins_router, tags=["Plugins"], prefix="/plugins")
