@@ -23,7 +23,8 @@ from cat.routes.openapi import get_openapi_configuration_function
 from cat.looking_glass.cheshire_cat import CheshireCat
 from cat.env import get_env
 from cat.log import log
-from cat.scalar import get_scalar_api_reference
+# Remove the import for get_scalar_api_reference
+# from cat.scalar import get_scalar_api_reference
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -80,19 +81,13 @@ if cors_enabled == "true":
 cheshire_cat_api.include_router(base.router, tags=["Home"])
 cheshire_cat_api.include_router(auth.router, tags=["User Auth"], prefix="/auth")
 cheshire_cat_api.include_router(users.router, tags=["Users"], prefix="/users")
-cheshire_cat_api.include_router(settings.router, tags=["Settings"], prefix="/settings")
-cheshire_cat_api.include_router(
-    llm.router, tags=["Large Language Model"], prefix="/llm"
-)
-cheshire_cat_api.include_router(embedder.router, tags=["Embedder"], prefix="/embedder")
-cheshire_cat_api.include_router(plugins.router, tags=["Plugins"], prefix="/plugins")
+cheshire_cat_api.include_router(settings.router, tags=["Settings"], prefix="/settings"])
+cheshire_cat_api.include_router(llm.router, tags=["Large Language Model"], prefix="/llm")
+cheshire_cat_api.include_router(embedder.router, tags=["Embedder"], prefix="/embedder"])
+cheshire_cat_api.include_router(plugins.router, tags=["Plugins"], prefix="/plugins"])
 cheshire_cat_api.include_router(memory_router, prefix="/memory")
-cheshire_cat_api.include_router(
-    upload.router, tags=["Rabbit Hole"], prefix="/rabbithole"
-)
-cheshire_cat_api.include_router(
-    auth_handler.router, tags=["AuthHandler"], prefix="/auth_handler"
-)
+cheshire_cat_api.include_router(upload.router, tags=["Rabbit Hole"], prefix="/rabbithole"])
+cheshire_cat_api.include_router(auth_handler.router, tags=["AuthHandler"], prefix="/auth_handler"])
 cheshire_cat_api.include_router(websocket.router, tags=["Websocket"])
 
 # mount static files
@@ -117,8 +112,8 @@ cheshire_cat_api.openapi = get_openapi_configuration_function(cheshire_cat_api)
 
 @cheshire_cat_api.get("/docs", include_in_schema=False)
 async def scalar_docs():
-    return get_scalar_api_reference(
-        openapi_url=cheshire_cat_api.openapi_url,
-        title=cheshire_cat_api.title,
-        scalar_favicon_url="https://cheshirecat.ai/wp-content/uploads/2023/10/Logo-Cheshire-Cat.svg",
-    )
+    return {
+        "openapi_url": cheshire_cat_api.openapi_url,
+        "title": cheshire_cat_api.title,
+        "scalar_favicon_url": "https://cheshirecat.ai/wp-content/uploads/2023/10/Logo-Cheshire-Cat.svg",
+    }
