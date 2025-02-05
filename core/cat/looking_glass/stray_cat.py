@@ -439,9 +439,9 @@ class StrayCat:
         log.info("Agent output returned to stray:")
         log.info(agent_output)
 
-        self._store_user_message_in_episodic_memory(
-            self.working_memory.user_message_json.text
-        )
+#        self._store_user_message_in_episodic_memory(
+#            self.working_memory.user_message_json.text
+#        )
 
         # why this response?
         why = self.__build_why()
