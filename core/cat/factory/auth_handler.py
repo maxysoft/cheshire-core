@@ -36,6 +36,16 @@ class CoreOnlyAuthConfig(AuthHandlerConfig):
         }
     )
 
+class ShopifyAuthConfig(AuthHandlerConfig):
+    _pyclass: Type = ShopifyAuthHandler
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "humanReadableName": "Shopify Auth Handler",
+            "description": "Authentication handler for Shopify integration",
+            "link": "",
+        }
+    )
 
 # TODOAUTH: have at least another auth_handler class to test
 # class ApiKeyAuthConfig(AuthHandlerConfig):
@@ -53,6 +63,7 @@ class CoreOnlyAuthConfig(AuthHandlerConfig):
 def get_allowed_auth_handler_strategies():
     list_auth_handler_default = [
         CoreOnlyAuthConfig,
+        ShopifyAuthConfig,
         # ApiKeyAuthConfig,
     ]
 
