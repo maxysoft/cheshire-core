@@ -7,7 +7,6 @@ from cat.factory.custom_auth_handler import (
     BaseAuthHandler,
     CoreOnlyAuthHandler,
 )
-
 from cat.factory.shopify_auth_handler import ShopifyAuthHandler
 
 
