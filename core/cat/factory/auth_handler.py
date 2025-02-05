@@ -12,7 +12,6 @@ from cat.factory.custom_auth_handler import (
     CoreOnlyAuthHandler,
 )
 
-
 class AuthHandlerConfig(BaseModel):
     _pyclass: Type[BaseAuthHandler] = None
 
@@ -27,7 +26,6 @@ class AuthHandlerConfig(BaseModel):
             )
         return cls._pyclass.default(**config)
 
-
 class CoreOnlyAuthConfig(AuthHandlerConfig):
     _pyclass: Type = CoreOnlyAuthHandler
 
@@ -39,7 +37,6 @@ class CoreOnlyAuthConfig(AuthHandlerConfig):
             "link": "",  # TODO link to auth docs
         }
     )
-
 
 def get_allowed_auth_handler_strategies():
     list_auth_handler_default = [
@@ -53,7 +50,6 @@ def get_allowed_auth_handler_strategies():
 
     return list_auth_handler
 
-
 def get_auth_handlers_schemas():
     AUTH_HANDLER_SCHEMAS = {}
     for config_class in get_allowed_auth_handler_strategies():
@@ -61,14 +57,12 @@ def get_auth_handlers_schemas():
 
     return AUTH_HANDLER_SCHEMAS
 
-
 def get_auth_handler_from_name(name):
     list_auth_handler = get_allowed_auth_handler_strategies()
     for auth_handler in list_auth_handler:
         if auth_handler.__name__ == name:
             return auth_handler
     return None
-
 
 class CoreAuthHandler(BaseAuthHandler):
     def authorize_user_from_jwt(
