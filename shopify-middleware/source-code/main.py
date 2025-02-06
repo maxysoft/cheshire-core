@@ -10,7 +10,6 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
 import requests
-from uuid import uuid4
 
 load_dotenv()
 
@@ -92,11 +91,17 @@ async def generate_token(request: Request):
             logger.error("JWT configuration missing from environment")
             raise HTTPException(status_code=500, detail="Missing JWT configuration")
         
+        # Authenticate with Cheshire Cat to get a token
+        cheshire_cat_token = authenticate_with_cheshire_cat()
+        if not cheshire_cat_token:
+            logger.error("Failed to authenticate with Cheshire Cat")
+            raise HTTPException(status_code=500, detail="Failed to authenticate with Cheshire Cat")
+
         # Add temporary user to the database via Cheshire Cat API
         temp_user_id = f"shopify_{shop_id}_{user_id}"
         user_data = {
-            "id": temp_user_id,
             "username": f"shopify_user_{user_id}",
+            "password": "temporary_password",  # Use a temporary password
             "permissions": {
                 "STATUS": ["READ"],
                 "MEMORY": ["READ", "LIST"],
@@ -104,7 +109,7 @@ async def generate_token(request: Request):
                 "STATIC": ["READ"],
             }
         }
-        add_user_response = add_user_to_cheshire_cat(user_data)
+        add_user_response = add_user_to_cheshire_cat(user_data, cheshire_cat_token)
         if not add_user_response:
             logger.error("Failed to add temporary user to Cheshire Cat")
             raise HTTPException(status_code=500, detail="Failed to add temporary user")
@@ -141,11 +146,33 @@ async def generate_token(request: Request):
         logger.error(f"Unexpected error in token generation: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-def add_user_to_cheshire_cat(user_data):
+def authenticate_with_cheshire_cat():
+    """Authenticate with Cheshire Cat to get a token"""
+    try:
+        cheshire_cat_api_url = os.getenv("CHESHIRE_CAT_API_URL")
+        cheshire_cat_username = os.getenv("CHESHIRE_CAT_USERNAME")
+        cheshire_cat_password = os.getenv("CHESHIRE_CAT_PASSWORD")
+        response = requests.post(
+            f"{cheshire_cat_api_url}/auth/login",
+            json={"username": cheshire_cat_username, "password": cheshire_cat_password}
+        )
+        if response.status_code == 200:
+            token = response.json().get("access_token")
+            logger.debug(f"Authenticated with Cheshire Cat: {token}")
+            return token
+        else:
+            logger.error(f"Failed to authenticate with Cheshire Cat: {response.status_code}, {response.text}")
+            return None
+    except Exception as e:
+        logger.error(f"Error authenticating with Cheshire Cat: {str(e)}")
+        return None
+
+def add_user_to_cheshire_cat(user_data, token):
     """Add a user to Cheshire Cat via API"""
     try:
         cheshire_cat_api_url = os.getenv("CHESHIRE_CAT_API_URL")
-        response = requests.post(f"{cheshire_cat_api_url}/users", json=user_data)
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.post(f"{cheshire_cat_api_url}/users", json=user_data, headers=headers)
         if response.status_code == 201:
             logger.debug(f"User added to Cheshire Cat: {user_data}")
             return True
