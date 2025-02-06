@@ -3,7 +3,7 @@
 #  to have a standard auth interface.
 
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Tuple, Literal
 import asyncio
 from urllib.parse import urlencode
 
@@ -38,10 +38,12 @@ class ConnectionAuth(ABC):
         connection: HTTPConnection # Request | WebSocket,
     ) -> StrayCat:
 
+        log.debug(f"Authenticating connection: {connection}")
         # get protocol from Starlette request
         protocol = connection.scope.get('type')
         # extract credentials (user_id, token_or_key) from connection
         user_id, credential = self.extract_credentials(connection)
+        log.debug(f"Extracted credentials: user_id={user_id}, credential={credential}")
         auth_handlers = [
             # try to get user from local idp
             connection.app.state.ccat.core_auth_handler,
@@ -49,12 +51,15 @@ class ConnectionAuth(ABC):
             connection.app.state.ccat.custom_auth_handler,
         ]
         for ah in auth_handlers:
+            log.debug(f"Trying auth handler: {ah}")
             user: AuthUserInfo = ah.authorize_user_from_credential(
                 protocol, credential, self.resource, self.permission, user_id=user_id
             )
             if user:
+                log.debug(f"User authenticated: {user}")
                 return await self.get_user_stray(user, connection)
 
+        log.warning(f"Authentication failed for connection: {connection}")
         # if no stray was obtained, raise exception
         self.not_allowed(connection)
 
@@ -99,6 +104,7 @@ class HTTPAuth(ConnectionAuth):
         if token == "":
             token = None
 
+        log.debug(f"Extracted HTTP credentials: user_id={user_id}, token={token}")
         return user_id, token
 
 
@@ -111,9 +117,11 @@ class HTTPAuth(ConnectionAuth):
                     # TODOV2: user_id should be the user.id
                 user_id=user.name, user_data=user, main_loop=event_loop
             )
+        log.debug(f"Returning user stray: {strays[user.id]}")
         return strays[user.id]
     
     def not_allowed(self, connection: Request):
+        log.warning(f"HTTP connection not allowed: {connection}")
         raise HTTPException(status_code=403, detail={"error": "Invalid Credentials"})
     
 
@@ -132,6 +140,7 @@ class WebSocketAuth(ConnectionAuth):
         #   Headers do not work from the browser
         token = connection.query_params.get("token", None)
         
+        log.debug(f"Extracted WebSocket credentials: user_id={user_id}, token={token}")
         return user_id, token
     
 
@@ -157,9 +166,11 @@ class WebSocketAuth(ConnectionAuth):
                 main_loop=asyncio.get_running_loop(),
             )
             strays[user.id] = stray
+            log.debug(f"Returning new user stray: {stray}")
             return stray
         
     def not_allowed(self, connection: WebSocket):
+        log.warning(f"WebSocket connection not allowed: {connection}")
         raise WebSocketException(code=1004, reason="Invalid Credentials")
 
 

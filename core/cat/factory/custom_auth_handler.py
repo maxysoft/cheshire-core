@@ -30,6 +30,7 @@ class BaseAuthHandler(ABC):  # TODOAUTH: pydantic model?
         # with JWT, the user id is in the token ad has priority
         user_id: str = "user",
     ) -> AuthUserInfo | None:
+        log.debug(f"Authorizing user from credential: protocol={protocol}, credential={credential}, user_id={user_id}")
         if is_jwt(credential):
             # JSON Web Token auth
             return self.authorize_user_from_jwt(
@@ -71,26 +72,35 @@ class CoreAuthHandler(BaseAuthHandler):
         self, token: str, auth_resource: AuthResource, auth_permission: AuthPermission
     ) -> AuthUserInfo | None:
         try:
+            log.debug(f"Decoding token: {token}")
             # decode token
             payload = jwt.decode(
                 token,
                 get_env("CCAT_JWT_SECRET"),
                 algorithms=[get_env("CCAT_JWT_ALGORITHM")],
             )
+            log.debug(f"Decoded payload: {payload}")
 
             # get user from DB
             users = get_users()
+            log.debug(f"Users from DB: {users}")
             if payload["sub"] in users:
                 user = users[payload["sub"]]
+                log.debug(f"User found: {user}")
                 # TODOAUTH: permissions check should be done in a method
                 if auth_resource in user["permissions"].keys() and \
                         auth_permission in user["permissions"][auth_resource]:
+                    log.debug(f"User has required permissions: {auth_resource}, {auth_permission}")
                     return AuthUserInfo(
                         id=payload["sub"],
                         name=payload["username"],
                         permissions=user["permissions"],
                         extra=user,
                     )
+                else:
+                    log.warning(f"User does not have required permissions: {auth_resource}, {auth_permission}")
+            else:
+                log.warning(f"User not found in DB: {payload['sub']}")
 
         except Exception as e:
             log.error(f"Could not auth user from JWT: {e}")
@@ -183,5 +193,3 @@ class CoreOnlyAuthHandler(BaseAuthHandler):
 
     def authorize_user_from_key(*args, **kwargs) -> AuthUserInfo | None:
         return None
-
-
