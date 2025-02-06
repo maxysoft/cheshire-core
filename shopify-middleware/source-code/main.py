@@ -153,7 +153,7 @@ def authenticate_with_cheshire_cat():
         cheshire_cat_username = os.getenv("CHESHIRE_CAT_USERNAME")
         cheshire_cat_password = os.getenv("CHESHIRE_CAT_PASSWORD")
         response = requests.post(
-            f"{cheshire_cat_api_url}/auth/login",
+            f"{cheshire_cat_api_url}/auth/token",
             json={"username": cheshire_cat_username, "password": cheshire_cat_password}
         )
         if response.status_code == 200:
