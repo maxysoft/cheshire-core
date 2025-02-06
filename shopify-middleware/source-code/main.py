@@ -9,6 +9,7 @@ import base64
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
+import requests
 from uuid import uuid4
 
 load_dotenv()
@@ -91,22 +92,22 @@ async def generate_token(request: Request):
             logger.error("JWT configuration missing from environment")
             raise HTTPException(status_code=500, detail="Missing JWT configuration")
         
-        # Add temporary user to the cheshire database
-        users_db = get_users()
+        # Add temporary user to the database via Cheshire Cat API
         temp_user_id = f"shopify_{shop_id}_{user_id}"
-        if temp_user_id not in users_db:
-            users_db[temp_user_id] = {
-                "id": temp_user_id,
-                "username": f"shopify_user_{user_id}",
-                "permissions": {
-                    "STATUS": ["READ"],
-                    "MEMORY": ["READ", "LIST"],
-                    "CONVERSATION": ["WRITE", "EDIT", "LIST", "READ", "DELETE"],
-                    "STATIC": ["READ"],
-                }
+        user_data = {
+            "id": temp_user_id,
+            "username": f"shopify_user_{user_id}",
+            "permissions": {
+                "STATUS": ["READ"],
+                "MEMORY": ["READ", "LIST"],
+                "CONVERSATION": ["WRITE", "EDIT", "LIST", "READ", "DELETE"],
+                "STATIC": ["READ"],
             }
-            update_users(users_db)
-            logger.debug(f"Temporary user added to DB: {users_db[temp_user_id]}")
+        }
+        add_user_response = add_user_to_cheshire_cat(user_data)
+        if not add_user_response:
+            logger.error("Failed to add temporary user to Cheshire Cat")
+            raise HTTPException(status_code=500, detail="Failed to add temporary user")
 
         payload = {
             "sub": temp_user_id,
@@ -140,12 +141,17 @@ async def generate_token(request: Request):
         logger.error(f"Unexpected error in token generation: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-def get_users():
-    # Mock function to get users from the database
-    # Replace with actual database call
-    return {}
-
-def update_users(users):
-    # Mock function to update users in the database
-    # Replace with actual database call
-    pass
+def add_user_to_cheshire_cat(user_data):
+    """Add a user to Cheshire Cat via API"""
+    try:
+        cheshire_cat_api_url = os.getenv("CHESHIRE_CAT_API_URL")
+        response = requests.post(f"{cheshire_cat_api_url}/users", json=user_data)
+        if response.status_code == 201:
+            logger.debug(f"User added to Cheshire Cat: {user_data}")
+            return True
+        else:
+            logger.error(f"Failed to add user to Cheshire Cat: {response.status_code}, {response.text}")
+            return False
+    except Exception as e:
+        logger.error(f"Error adding user to Cheshire Cat: {str(e)}")
+        return False
